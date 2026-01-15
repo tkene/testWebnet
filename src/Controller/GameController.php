@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Service\CardService;
 use App\Service\GameService;
+use App\Service\GameStateService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,11 +15,16 @@ class GameController extends AbstractController
 {
     private CardService $cardService;
     private GameService $gameService;
+    private GameStateService $gameStateService;
 
-    public function __construct(GameService $gameService, CardService $cardService)
-    {
+    public function __construct(
+        GameService $gameService,
+        CardService $cardService,
+        GameStateService $gameStateService
+    ) {
         $this->gameService = $gameService;
         $this->cardService = $cardService;
+        $this->gameStateService = $gameStateService;
     }
 
     #[Route('/', name: 'app_home')]
@@ -30,12 +36,10 @@ class GameController extends AbstractController
     #[Route('/choose-colors', name: 'app_choose_colors')]
     public function chooseColors(SessionInterface $session): Response
     {
-        $session->clear();
+        $this->gameStateService->initializeGame($session);
         
         $colorOrder = $this->cardService->generateRandomColorOrder();
-        
-        $session->set('colorOrder', $colorOrder);
-        $session->set('colorOrderConfirmed', false);
+        $this->gameStateService->setColorOrder($session, $colorOrder);
 
         return $this->render('game/choose_colors.html.twig', [
             'colorOrder' => $colorOrder,
@@ -45,28 +49,23 @@ class GameController extends AbstractController
     #[Route('/confirm-colors', name: 'app_confirm_colors')]
     public function confirmColors(SessionInterface $session): Response
     {
-        if ($session->has('colorOrder')) {
-            $colorOrder = $session->get('colorOrder');
-            
-            $session->set('colorOrder', $colorOrder);
-            $session->set('colorOrderConfirmed', true);
-            
-            return $this->redirectToRoute('app_choose_values');
+        if ($this->gameStateService->getColorOrder($session) === null) {
+            return $this->redirectToRoute('app_choose_colors');
         }
         
-        return $this->redirectToRoute('app_choose_colors');
+        $this->gameStateService->confirmColorOrder($session);
+        return $this->redirectToRoute('app_choose_values');
     }
 
     #[Route('/choose-values', name: 'app_choose_values')]
     public function chooseValues(SessionInterface $session): Response
     {
-        if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
+        if (!$this->gameStateService->isColorOrderConfirmed($session)) {
             return $this->redirectToRoute('app_choose_colors');
         }
         
         $valuesOrder = $this->cardService->generateRandomValuesOrder();
-        $session->set('valuesOrder', $valuesOrder);
-        $session->set('valuesOrderConfirmed', false);
+        $this->gameStateService->setValuesOrder($session, $valuesOrder);
         
         return $this->render('game/choose_values.html.twig', [
             'valuesOrder' => $valuesOrder,
@@ -76,22 +75,22 @@ class GameController extends AbstractController
     #[Route('/confirm-values', name: 'app_confirm_values')]
     public function confirmValues(SessionInterface $session): Response
     {
-        if ($session->has('valuesOrder')) {
-            $session->set('valuesOrderConfirmed', true);
-            return $this->redirectToRoute('app_choose_game_mode');
+        if ($this->gameStateService->getValuesOrder($session) === null) {
+            return $this->redirectToRoute('app_choose_values');
         }
         
-        return $this->redirectToRoute('app_choose_values');
+        $this->gameStateService->confirmValuesOrder($session);
+        return $this->redirectToRoute('app_choose_game_mode');
     }
 
     #[Route('/choose-game-mode', name: 'app_choose_game_mode')]
     public function chooseGameMode(SessionInterface $session): Response
     {
-        if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
+        if (!$this->gameStateService->isColorOrderConfirmed($session)) {
             return $this->redirectToRoute('app_choose_colors');
         }
         
-        if (!$session->has('valuesOrderConfirmed') || !$session->get('valuesOrderConfirmed')) {
+        if (!$this->gameStateService->isValuesOrderConfirmed($session)) {
             return $this->redirectToRoute('app_choose_values');
         }
         
@@ -116,7 +115,7 @@ class GameController extends AbstractController
             return $this->redirectToRoute('app_choose_game_mode');
         }
         
-        $session->set('numberOfCards', $numberOfCards);
+        $this->gameStateService->setNumberOfCards($session, $numberOfCards);
             
         return $this->redirectToRoute('app_show_cards_with_values');
     }
@@ -124,71 +123,73 @@ class GameController extends AbstractController
     #[Route('/show-cards-with-values', name: 'app_show_cards_with_values')]
     public function showCardsWithValues(SessionInterface $session): Response
     {
-        if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
+        if (!$this->gameStateService->isGameSetupComplete($session)) {
             return $this->redirectToRoute('app_choose_colors');
         }
         
-        if (!$session->has('valuesOrderConfirmed') || !$session->get('valuesOrderConfirmed')) {
-            return $this->redirectToRoute('app_choose_values');
-        }
-        
-        if (!$session->has('numberOfCards')) {
+        if (!$this->gameStateService->hasNumberOfCards($session)) {
             return $this->redirectToRoute('app_choose_game_mode');
         }
         
-        if (!$session->has('unsortedHand')) {
-            $colorOrder = $session->get('colorOrder', []);
-            $valuesOrder = $session->get('valuesOrder', []);
-            $numberOfCards = $session->get('numberOfCards', 4);
+        if (!$this->gameStateService->hasUnsortedHand($session)) {
+            $handData = $this->gameStateService->getHandGenerationData($session);
             
-            $unsortedHand = $this->gameService->generateRandomHand($colorOrder, $valuesOrder, $numberOfCards);
+            if ($handData === null) {
+                return $this->redirectToRoute('app_choose_game_mode');
+            }
             
-            $session->set('unsortedHand', $unsortedHand);
+            $unsortedHand = $this->gameService->generateRandomHand(
+                $handData['colorOrder'],
+                $handData['valuesOrder'],
+                $handData['numberOfCards']
+            );
+            $this->gameStateService->setUnsortedHand($session, $unsortedHand);
         }
         
         return $this->render('game/show_cards.html.twig', [
-            'drawnCards' => $session->get('unsortedHand'),
+            'drawnCards' => $this->gameStateService->getUnsortedHand($session),
         ]);
     }
 
     #[Route('/show-sorted-cards', name: 'app_show_sorted_cards')]
     public function showSortedCards(SessionInterface $session): Response
     {
-        if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
+        if (!$this->gameStateService->isGameSetupComplete($session)) {
             return $this->redirectToRoute('app_choose_colors');
         }
         
-        if (!$session->has('valuesOrderConfirmed') || !$session->get('valuesOrderConfirmed')) {
-            return $this->redirectToRoute('app_choose_values');
-        }
-        
-        if (!$session->has('numberOfCards')) {
+        if (!$this->gameStateService->hasNumberOfCards($session)) {
             return $this->redirectToRoute('app_choose_game_mode');
         }
         
-        if (!$session->has('unsortedHand')) {
+        if (!$this->gameStateService->hasUnsortedHand($session)) {
             return $this->redirectToRoute('app_show_cards_with_values');
         }
         
-        $colorOrder = $session->get('colorOrder', []);
-        $valuesOrder = $session->get('valuesOrder', []);
-        $unsortedHand = $session->get('unsortedHand', []);
+        $sortingData = $this->gameStateService->getSortingData($session);
         
-        $sortedHand = $this->cardService->sortHand($unsortedHand, $colorOrder, $valuesOrder);
+        if ($sortingData === null) {
+            return $this->redirectToRoute('app_show_cards_with_values');
+        }
         
-        $session->set('sortedHand', $sortedHand);
+        $sortedHand = $this->cardService->sortHand(
+            $sortingData['unsortedHand'],
+            $sortingData['colorOrder'],
+            $sortingData['valuesOrder']
+        );
+        $this->gameStateService->setSortedHand($session, $sortedHand);
         
         return $this->render('game/show_sorted_cards.html.twig', [
             'sortedCards' => $sortedHand,
-            'colorOrder' => $colorOrder,
-            'valuesOrder' => $valuesOrder,
+            'colorOrder' => $sortingData['colorOrder'],
+            'valuesOrder' => $sortingData['valuesOrder'],
         ]);
     }
 
     #[Route('/reset-game', name: 'app_reset_game')]
     public function resetGame(SessionInterface $session): Response
     {
-        $session->clear();
+        $this->gameStateService->clearGame($session);
         return $this->redirectToRoute('app_home');
     }
 }
