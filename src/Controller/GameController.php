@@ -28,26 +28,73 @@ class GameController extends AbstractController
     }
 
     #[Route('/choose-colors', name: 'app_choose_colors')]
-    public function chooseColors(SessionInterface $session): Response
+    public function chooseColors(SessionInterface $session, Request $request): Response
     {
-        $session->clear();
+        $new = $request->query->get('new');
         
-        $colorOrder = $this->cardService->generateRandomColorOrder();
-        
-        $session->set('colorOrder', $colorOrder);
-        $session->set('colorOrderConfirmed', false);
+        if ($new || !$session->has('colorOrder')) {
+            // Si on demande un nouvel ordre ou si aucun ordre n'existe, on génère un nouvel ordre aléatoire
+            // On ne clear que les données liées aux couleurs pour préserver le reste si nécessaire
+            if ($new) {
+                // Générer un nouvel ordre aléatoire
+                $colorOrder = $this->cardService->generateRandomColorOrder();
+                $session->set('colorOrder', $colorOrder);
+                $session->set('colorOrderConfirmed', false);
+            } else {
+                // Première visite : générer un ordre aléatoire
+                $colorOrder = $this->cardService->generateRandomColorOrder();
+                $session->set('colorOrder', $colorOrder);
+                $session->set('colorOrderConfirmed', false);
+            }
+        } else {
+            // Récupérer l'ordre existant (qui peut avoir été modifié)
+            $colorOrder = $session->get('colorOrder', []);
+            // S'assurer que l'ordre est bien sauvegardé
+            $session->set('colorOrder', $colorOrder);
+        }
 
         return $this->render('game/choose_colors.html.twig', [
             'colorOrder' => $colorOrder,
         ]);
     }
 
+    #[Route('/reorder-color', name: 'app_reorder_color', methods: ['POST'])]
+    public function reorderColor(SessionInterface $session, Request $request): Response
+    {
+        $index = (int) $request->request->get('index');
+        $direction = $request->request->get('direction'); // 'up' or 'down'
+        
+        if (!$session->has('colorOrder')) {
+            return $this->redirectToRoute('app_choose_colors');
+        }
+        
+        $colorOrder = $session->get('colorOrder');
+        
+        if ($direction === 'up' && $index > 0) {
+            // Échanger avec l'élément précédent
+            $temp = $colorOrder[$index];
+            $colorOrder[$index] = $colorOrder[$index - 1];
+            $colorOrder[$index - 1] = $temp;
+        } elseif ($direction === 'down' && $index < count($colorOrder) - 1) {
+            // Échanger avec l'élément suivant
+            $temp = $colorOrder[$index];
+            $colorOrder[$index] = $colorOrder[$index + 1];
+            $colorOrder[$index + 1] = $temp;
+        }
+        
+        $session->set('colorOrder', $colorOrder);
+        
+        return $this->redirectToRoute('app_choose_colors');
+    }
+
     #[Route('/confirm-colors', name: 'app_confirm_colors')]
     public function confirmColors(SessionInterface $session): Response
     {
         if ($session->has('colorOrder')) {
+            // Récupérer l'ordre actuel (qui peut avoir été modifié)
             $colorOrder = $session->get('colorOrder');
             
+            // Sauvegarder explicitement l'ordre actuel dans la session
             $session->set('colorOrder', $colorOrder);
             $session->set('colorOrderConfirmed', true);
             
@@ -58,26 +105,75 @@ class GameController extends AbstractController
     }
 
     #[Route('/choose-values', name: 'app_choose_values')]
-    public function chooseValues(SessionInterface $session): Response
+    public function chooseValues(SessionInterface $session, Request $request): Response
     {
         if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
             return $this->redirectToRoute('app_choose_colors');
         }
         
-        $valuesOrder = $this->cardService->generateRandomValuesOrder();
-        $session->set('valuesOrder', $valuesOrder);
-        $session->set('valuesOrderConfirmed', false);
+        $new = $request->query->get('new');
+        
+        if ($new || !$session->has('valuesOrder')) {
+            // Si on demande un nouvel ordre ou si aucun ordre n'existe, on génère un nouvel ordre aléatoire
+            $valuesOrder = $this->cardService->generateRandomValuesOrder();
+            $session->set('valuesOrder', $valuesOrder);
+            $session->set('valuesOrderConfirmed', false);
+        } else {
+            // Récupérer l'ordre existant (qui peut avoir été modifié)
+            $valuesOrder = $session->get('valuesOrder', []);
+            // S'assurer que l'ordre est bien sauvegardé
+            $session->set('valuesOrder', $valuesOrder);
+        }
         
         return $this->render('game/choose_values.html.twig', [
             'valuesOrder' => $valuesOrder,
         ]);
     }
 
+    #[Route('/reorder-value', name: 'app_reorder_value', methods: ['POST'])]
+    public function reorderValue(SessionInterface $session, Request $request): Response
+    {
+        if (!$session->has('colorOrderConfirmed') || !$session->get('colorOrderConfirmed')) {
+            return $this->redirectToRoute('app_choose_colors');
+        }
+        
+        $index = (int) $request->request->get('index');
+        $direction = $request->request->get('direction'); // 'up' or 'down'
+        
+        if (!$session->has('valuesOrder')) {
+            return $this->redirectToRoute('app_choose_values');
+        }
+        
+        $valuesOrder = $session->get('valuesOrder');
+        
+        if ($direction === 'up' && $index > 0) {
+            // Échanger avec l'élément précédent
+            $temp = $valuesOrder[$index];
+            $valuesOrder[$index] = $valuesOrder[$index - 1];
+            $valuesOrder[$index - 1] = $temp;
+        } elseif ($direction === 'down' && $index < count($valuesOrder) - 1) {
+            // Échanger avec l'élément suivant
+            $temp = $valuesOrder[$index];
+            $valuesOrder[$index] = $valuesOrder[$index + 1];
+            $valuesOrder[$index + 1] = $temp;
+        }
+        
+        $session->set('valuesOrder', $valuesOrder);
+        
+        return $this->redirectToRoute('app_choose_values');
+    }
+
     #[Route('/confirm-values', name: 'app_confirm_values')]
     public function confirmValues(SessionInterface $session): Response
     {
         if ($session->has('valuesOrder')) {
+            // Récupérer l'ordre actuel (qui peut avoir été modifié)
+            $valuesOrder = $session->get('valuesOrder');
+            
+            // Sauvegarder explicitement l'ordre actuel dans la session
+            $session->set('valuesOrder', $valuesOrder);
             $session->set('valuesOrderConfirmed', true);
+            
             return $this->redirectToRoute('app_choose_game_mode');
         }
         

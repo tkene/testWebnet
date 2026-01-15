@@ -17,6 +17,32 @@
             <div class="bg-gradient-primary text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-[1.2em]">
                 {{ loop.index }}
             </div>
+            <div class="flex flex-col gap-2">
+                <form method="POST" action="{{ path('app_reorder_color') }}" class="inline">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <input type="hidden" name="direction" value="up">
+                    <button 
+                        type="submit" 
+                        {% if loop.first %}disabled{% endif %}
+                        class="bg-gradient-primary text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-[2em] cursor-pointer transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Monter"
+                    >
+                        ↑
+                    </button>
+                </form>
+                <form method="POST" action="{{ path('app_reorder_color') }}" class="inline">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <input type="hidden" name="direction" value="down">
+                    <button 
+                        type="submit" 
+                        {% if loop.last %}disabled{% endif %}
+                        class="bg-gradient-primary text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-[2em] cursor-pointer transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Descendre"
+                    >
+                        ↓
+                    </button>
+                </form>
+            </div>
             <div class="text-[3em]">
                 {{ color.symbol }}
             </div>
@@ -27,18 +53,23 @@
         {% endfor %}
     </div>
 
-    <div class="flex gap-4 justify-center mt-5">
-        <a 
-          href="{{ path('app_choose_colors', {'new': 1}) }}" 
-          class="bg-gradient-primary text-white px-12 py-4 text-[1.2em] font-bold rounded-[50px] cursor-pointer transition-all duration-300 ease-in-out shadow-[0_4px_15px_rgba(102,126,234,0.4)] inline-block hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(102,126,234,0.6)]">
-            Nouveau ordre
-        </a>
-        <a 
-          href="{{ path('app_confirm_colors') }}"
-          class="bg-gradient-primary text-white px-12 py-4 text-[1.2em] font-bold rounded-[50px] cursor-pointer transition-all duration-300 ease-in-out shadow-[0_4px_15px_rgba(102,126,234,0.4)] inline-block hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(102,126,234,0.6)]"
-        >
-            Confirmer cet ordre
-        </a>
+    <div class="flex flex-col gap-4 justify-center mt-5">
+        <div class="flex gap-4 justify-center">
+            <a 
+              href="{{ path('app_choose_colors', {'new': 1}) }}" 
+              class="bg-gradient-primary text-white px-12 py-4 text-[1.2em] font-bold rounded-[50px] cursor-pointer transition-all duration-300 ease-in-out shadow-[0_4px_15px_rgba(102,126,234,0.4)] inline-block hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(102,126,234,0.6)]">
+                🎲 Nouvel ordre aléatoire
+            </a>
+            <a 
+              href="{{ path('app_confirm_colors') }}"
+              class="bg-gradient-primary text-white px-12 py-4 text-[1.2em] font-bold rounded-[50px] cursor-pointer transition-all duration-300 ease-in-out shadow-[0_4px_15px_rgba(102,126,234,0.4)] inline-block hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(102,126,234,0.6)]"
+            >
+                ✓ Confirmer cet ordre
+            </a>
+        </div>
+        <p class="text-text-medium text-[0.9em] text-gray-500 mt-2">
+            Cliquez sur "Confirmer" pour accepter l'ordre actuel (aléatoire ou modifié)
+        </p>
     </div>
 </div>
 {% endblock %}
