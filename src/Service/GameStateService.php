@@ -103,18 +103,12 @@ class GameStateService
         return $session->get(self::SESSION_SORTED_HAND);
     }
 
-    /**
-     * Valide que le setup du jeu est complet (couleurs et valeurs confirmées).
-     */
     public function isGameSetupComplete(SessionInterface $session): bool
     {
         return $this->isColorOrderConfirmed($session) 
             && $this->isValuesOrderConfirmed($session);
     }
 
-    /**
-     * Récupère toutes les données nécessaires pour générer une main.
-     */
     public function getHandGenerationData(SessionInterface $session): ?array
     {
         $colorOrder = $this->getColorOrder($session);
@@ -132,9 +126,6 @@ class GameStateService
         ];
     }
 
-    /**
-     * Récupère toutes les données nécessaires pour trier une main.
-     */
     public function getSortingData(SessionInterface $session): ?array
     {
         $colorOrder = $this->getColorOrder($session);
