@@ -1,15 +1,3 @@
-<template>
-  <div
-    class="card-item"
-    :class="{ 'sorted': sorted }"
-    :style="{ '--delay': delay + 's' }"
-  >
-    <div class="card-symbol">{{ card.symbol }}</div>
-    <div class="card-value">{{ card.value }}</div>
-    <div class="card-color">{{ card.color }}</div>
-  </div>
-</template>
-
 <script setup>
 defineProps({
   card: {
@@ -26,6 +14,19 @@ defineProps({
   }
 })
 </script>
+
+
+<template>
+  <div
+    class="card-item"
+    :class="{ 'sorted': sorted }"
+    :style="{ '--delay': delay + 's' }"
+  >
+    <div class="card-symbol">{{ card.symbol }}</div>
+    <div class="card-value">{{ card.value }}</div>
+    <div class="card-color">{{ card.color }}</div>
+  </div>
+</template>
 
 <style scoped>
 .card-item {

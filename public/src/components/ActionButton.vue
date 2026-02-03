@@ -1,15 +1,3 @@
-<template>
-  <button
-    :class="['action-btn', buttonClass, { 'loading': loading, 'disabled': disabled }]"
-    :disabled="disabled || loading"
-    @click="$emit('click', $event)"
-  >
-    <span v-if="!loading">{{ label }}</span>
-    <span v-else class="loading-text">{{ loadingText }}</span>
-    <slot></slot>
-  </button>
-</template>
-
 <script setup>
 defineProps({
   label: {
@@ -36,6 +24,18 @@ defineProps({
 
 defineEmits(['click'])
 </script>
+
+<template>
+  <button
+    :class="['action-btn', buttonClass, { 'loading': loading, 'disabled': disabled }]"
+    :disabled="disabled || loading"
+    @click="$emit('click', $event)"
+  >
+    <span v-if="!loading">{{ label }}</span>
+    <span v-else class="loading-text">{{ loadingText }}</span>
+    <slot></slot>
+  </button>
+</template>
 
 <style scoped>
 .action-btn {

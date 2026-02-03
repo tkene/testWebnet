@@ -1,3 +1,26 @@
+<script setup>
+defineProps({
+  position: {
+    type: Number,
+    required: true
+  },
+  canMoveUp: {
+    type: Boolean,
+    default: true
+  },
+  canMoveDown: {
+    type: Boolean,
+    default: true
+  },
+  delay: {
+    type: Number,
+    default: 0
+  }
+})
+
+defineEmits(['move-up', 'move-down'])
+</script>
+
 <template>
   <div
     class="reorderable-item"
@@ -34,29 +57,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-defineProps({
-  position: {
-    type: Number,
-    required: true
-  },
-  canMoveUp: {
-    type: Boolean,
-    default: true
-  },
-  canMoveDown: {
-    type: Boolean,
-    default: true
-  },
-  delay: {
-    type: Number,
-    default: 0
-  }
-})
-
-defineEmits(['move-up', 'move-down'])
-</script>
 
 <style scoped>
 .reorderable-item {

@@ -1,26 +1,3 @@
-<template>
-  <div class="modern-card" :class="[cardClass, { 'fullscreen-card': fullscreen }]">
-    <div class="card-header" v-if="title || $slots.header">
-      <div class="header-content">
-        <h1 class="card-title" v-if="title">
-          <span class="title-text">{{ title }}</span>
-          <span class="title-emoji" v-if="emoji">{{ emoji }}</span>
-        </h1>
-        <p class="card-subtitle" v-if="subtitle">{{ subtitle }}</p>
-        <slot name="header"></slot>
-      </div>
-    </div>
-
-    <div class="card-content" :class="{ 'is-moving': isMoving }">
-      <slot></slot>
-    </div>
-
-    <div class="card-actions" v-if="$slots.actions">
-      <slot name="actions"></slot>
-    </div>
-  </div>
-</template>
-
 <script setup>
 defineProps({
   title: {
@@ -49,6 +26,29 @@ defineProps({
   }
 })
 </script>
+
+<template>
+  <div class="modern-card" :class="[cardClass, { 'fullscreen-card': fullscreen }]">
+    <div class="card-header" v-if="title || $slots.header">
+      <div class="header-content">
+        <h1 class="card-title" v-if="title">
+          <span class="title-text">{{ title }}</span>
+          <span class="title-emoji" v-if="emoji">{{ emoji }}</span>
+        </h1>
+        <p class="card-subtitle" v-if="subtitle">{{ subtitle }}</p>
+        <slot name="header"></slot>
+      </div>
+    </div>
+
+    <div class="card-content" :class="{ 'is-moving': isMoving }">
+      <slot></slot>
+    </div>
+
+    <div class="card-actions" v-if="$slots.actions">
+      <slot name="actions"></slot>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 /* Card principale avec glassmorphism */
